@@ -1,3 +1,4 @@
+import json
 import re
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.service import Service
@@ -19,7 +20,7 @@ browser = Chrome(service=browser_service)
 
 parsed_data = []
 
-def get_vacancy_informaition(vacancies_link):
+def get_vacancy_informaition(vacancies_link, browser):
     browser.get(vacancies_link)
     main_serp_content = wait_element(browser, 1, By.CLASS_NAME, "vacancy-serp-content")
     vacancy_list = main_serp_content.find_element(By.ID, "a11y-main-content")
@@ -33,12 +34,16 @@ def get_vacancy_informaition(vacancies_link):
 
         vacancy_employer = employer_tag.text
         vacancy_address = address_tag.text
-        vacancy_compensation = compensation_tag.text
         link_absolute = a_tag.get_attribute("href")
         vacancy_name = vacancy_name_tag.text
 
+        if compensation_tag is not None:
+            vacancy_compensation = compensation_tag.text
+        else:
+            vacancy_compensation = "Не указано"
 
-        if re.findall(r"django", vacancy_name, re.I|re.M) or re.findall(r"flask", vacancy_name, re.I|re.M):
+        if (re.findall(r"$", vacancy_compensation) and
+            (re.findall(r"django", vacancy_name, re.I|re.M) or re.findall(r"flask", vacancy_name, re.I|re.M))):
             parsed_data.append(
                 {
                     "employer": vacancy_employer,
@@ -55,13 +60,13 @@ def get_vacancy_informaition(vacancies_link):
     return next_page_link
 
 vacancies_link = "https://spb.hh.ru/search/vacancy?text=python&area=1&area=2"
-next_page = get_vacancy_informaition(vacancies_link)
+next_page = get_vacancy_informaition(vacancies_link, browser)
 
 flag = True
 while flag:
-    next_page = get_vacancy_informaition(next_page)
+    next_page = get_vacancy_informaition(next_page, browser)
     if next_page is None:
         flag = False
 
-for item in parsed_data:
-    print(item)
+with open('vacancies_file.json', 'w') as f:
+    json.dump(parsed_data, f, indent=2)
