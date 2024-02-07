@@ -42,8 +42,9 @@ def get_vacancy_informaition(vacancies_link, browser):
         else:
             vacancy_compensation = "Не указано"
 
-        if (re.findall(r"$", vacancy_compensation) and
-            (re.findall(r"django", vacancy_name, re.I|re.M) or re.findall(r"flask", vacancy_name, re.I|re.M))):
+        if (re.findall(r"$", vacancy_compensation)
+                and (re.findall(r"django", vacancy_name, re.I|re.M)
+                or re.findall(r"flask", vacancy_name, re.I|re.M))):
             parsed_data.append(
                 {
                     "employer": vacancy_employer,
@@ -54,8 +55,14 @@ def get_vacancy_informaition(vacancies_link, browser):
             )
 
     pager_tag = main_serp_content.find_element(By.CLASS_NAME, "pager")
-    next_page_button_tag = pager_tag.find_element(By.TAG_NAME, "a")
-    next_page_link = next_page_button_tag.get_attribute("href")
+    next_page_button_tags = pager_tag.find_elements(By.TAG_NAME, "a")
+    for link_tag in next_page_button_tags:
+        if link_tag.find_element(By.LINK_TEXT, "дальше") is not None:
+            next_page_link = link_tag.get_attribute("href")
+            break
+        else:
+            next_page_link = None
+
 
     return next_page_link
 
@@ -68,5 +75,5 @@ while flag:
     if next_page is None:
         flag = False
 
-with open('vacancies_file.json', 'w') as f:
-    json.dump(parsed_data, f, indent=2)
+with open("vacancies_file.json", "w", encoding="utf-8") as f:
+    json.dump(parsed_data, f, ensure_ascii=False, indent=2)
